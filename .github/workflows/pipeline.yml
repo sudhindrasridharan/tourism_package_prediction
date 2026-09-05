@@ -15,8 +15,6 @@ on:
   # Allow manual execution from GitHub
   workflow_dispatch:
 
-  permissions:
-    contents: write
 
 # ============================================================
 # JOB 1: DATA PREPARATION
