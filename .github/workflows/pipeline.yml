@@ -1,0 +1,221 @@
+
+name: Tourism Package Prediction MLOps Pipeline
+
+# ============================================================
+# TRIGGER THE WORKFLOW
+# ============================================================
+
+on:
+
+  # Run whenever code is pushed to main
+  push:
+    branches:
+      - main
+
+  # Allow manual execution from GitHub
+  workflow_dispatch:
+
+  permissions:
+    contents: write
+
+# ============================================================
+# JOB 1: DATA PREPARATION
+# ============================================================
+
+jobs:
+
+  data-preparation:
+
+    name: Data Preparation
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ------------------------------------------------------
+      # Step 1: Checkout repository
+      # ------------------------------------------------------
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # ------------------------------------------------------
+      # Step 2: Set up Python
+      # ------------------------------------------------------
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+
+      # ------------------------------------------------------
+      # Step 3: Install dependencies
+      # ------------------------------------------------------
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas scikit-learn numpy
+
+
+      # ------------------------------------------------------
+      # Step 4: Prepare data
+      # ------------------------------------------------------
+
+      - name: Run data preparation
+        run: |
+          python data_preparation.py
+
+
+      # ------------------------------------------------------
+      # Step 5: Upload train/test data as artifact
+      # ------------------------------------------------------
+
+      - name: Upload prepared data
+        uses: actions/upload-artifact@v4
+        with:
+          name: prepared-data
+          path: data/processed/
+
+
+# ============================================================
+# JOB 2: MODEL BUILDING
+# ============================================================
+
+  model-building:
+
+    name: Model Building
+
+    needs: data-preparation
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ------------------------------------------------------
+      # Step 1: Checkout repository
+      # ------------------------------------------------------
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # ------------------------------------------------------
+      # Step 2: Set up Python
+      # ------------------------------------------------------
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+
+      # ------------------------------------------------------
+      # Step 3: Install dependencies
+      # ------------------------------------------------------
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy scikit-learn mlflow
+
+
+      # ------------------------------------------------------
+      # Step 4: Download prepared data
+      # ------------------------------------------------------
+
+      - name: Download prepared data
+        uses: actions/download-artifact@v4
+        with:
+          name: prepared-data
+          path: data/processed/
+
+
+      # ------------------------------------------------------
+      # Step 5: Run model training
+      # ------------------------------------------------------
+
+      - name: Train and evaluate model
+        run: |
+          python model_building/train.py
+
+
+      # ------------------------------------------------------
+      # Step 6: Upload trained model
+      # ------------------------------------------------------
+
+      - name: Upload trained model
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model
+          path: deployment/best_model.pkl
+
+
+# ============================================================
+# JOB 3: COMMIT BEST MODEL TO MAIN BRANCH
+# ============================================================
+
+  update-repository:
+
+    name: Update Repository
+
+    needs: model-building
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+
+      # ------------------------------------------------------
+      # Step 1: Checkout repository
+      # ------------------------------------------------------
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # ------------------------------------------------------
+      # Step 2: Download trained model
+      # ------------------------------------------------------
+
+      - name: Download trained model
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: deployment/
+
+
+      # ------------------------------------------------------
+      # Step 3: Configure Git
+      # ------------------------------------------------------
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+
+      # ------------------------------------------------------
+      # Step 4: Commit updated model
+      # ------------------------------------------------------
+
+      - name: Commit updated model
+        run: |
+
+          git add deployment/best_model.pkl
+
+          git diff --cached --quiet || git commit \
+            -m "Update trained tourism prediction model"
+
+
+      # ------------------------------------------------------
+      # Step 5: Push updates to main
+      # ------------------------------------------------------
+
+      - name: Push updates to main
+        run: |
+          git push origin HEAD:main
