@@ -35,7 +35,7 @@ os.makedirs(
 
 print("Loading dataset...")
 
-df = pd.read_csv(VAL_DATA_PATH)
+df = pd.read_csv(DATA_PATH)
 
 print("Original dataset shape:", df.shape)
 
