@@ -12,22 +12,8 @@ on:
     branches:
       - main
 
-    # Do NOT trigger the pipeline again when only
-    # the automatically generated model is updated
-    paths-ignore:
-      - "deployment/best_model.pkl"
-
   # Allow manual execution from GitHub
   workflow_dispatch:
-
-
-# ============================================================
-# PREVENT MULTIPLE PIPELINES FROM RUNNING AT THE SAME TIME
-# ============================================================
-
-concurrency:
-  group: tourism-package-prediction
-  cancel-in-progress: false
 
 
 # ============================================================
@@ -51,11 +37,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-
-      # ------------------------------------------------------
-      # Step 2: Check repository path and files
-      # ------------------------------------------------------
-
       - name: Check repository path and files
         run: |
           echo "Current working directory:"
@@ -74,17 +55,10 @@ jobs:
           ls -la data
 
           echo ""
-          echo "Checking tourism.csv:"
-          test -f data/tourism.csv
-          echo "tourism.csv found successfully."
-
-          echo ""
-          echo "All repository files:"
+          echo "All files:"
           find . -maxdepth 3 -type f | sort
-
-
       # ------------------------------------------------------
-      # Step 3: Set up Python
+      # Step 2: Set up Python
       # ------------------------------------------------------
 
       - name: Set up Python
@@ -94,7 +68,7 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Step 4: Install dependencies
+      # Step 3: Install dependencies
       # ------------------------------------------------------
 
       - name: Install dependencies
@@ -104,7 +78,7 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Step 5: Run data preparation
+      # Step 4: Prepare data
       # ------------------------------------------------------
 
       - name: Run data preparation
@@ -113,34 +87,19 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Step 6: Verify prepared datasets
-      # ------------------------------------------------------
-
-      - name: Verify prepared data
-        run: |
-          echo "Processed data files:"
-          ls -lh data/processed/
-
-          test -f data/processed/train.csv
-          test -f data/processed/test.csv
-
-          echo "train.csv and test.csv found successfully."
-
-
-      # ------------------------------------------------------
-      # Step 7: Upload train/test data as artifact
+      # Step 5: Upload train/test data as artifact
       # ------------------------------------------------------
 
       - name: Upload prepared data
         uses: actions/upload-artifact@v4
         with:
           name: prepared-data
-          path: data/processed/
+          path: data/processed
 
 
-  # ==========================================================
-  # JOB 2: MODEL BUILDING
-  # ==========================================================
+# ============================================================
+# JOB 2: MODEL BUILDING
+# ============================================================
 
   model-building:
 
@@ -159,11 +118,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-
-      # ------------------------------------------------------
-      # Step 2: Check repository
-      # ------------------------------------------------------
-
       - name: Check repository path and files
         run: |
           echo "Current working directory:"
@@ -181,9 +135,12 @@ jobs:
           echo "Data folder contents:"
           ls -la data
 
+          echo ""
+          echo "All files:"
+          find . -maxdepth 3 -type f | sort
 
       # ------------------------------------------------------
-      # Step 3: Set up Python
+      # Step 2: Set up Python
       # ------------------------------------------------------
 
       - name: Set up Python
@@ -193,7 +150,7 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Step 4: Install dependencies
+      # Step 3: Install dependencies
       # ------------------------------------------------------
 
       - name: Install dependencies
@@ -203,33 +160,18 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Step 5: Download prepared data
+      # Step 4: Download prepared data
       # ------------------------------------------------------
 
       - name: Download prepared data
         uses: actions/download-artifact@v4
         with:
           name: prepared-data
-          path: data/processed/
+          path: data/processed
 
 
       # ------------------------------------------------------
-      # Step 6: Verify prepared data
-      # ------------------------------------------------------
-
-      - name: Verify prepared data
-        run: |
-          echo "Downloaded training and testing data:"
-          ls -lh data/processed/
-
-          test -f data/processed/train.csv
-          test -f data/processed/test.csv
-
-          echo "Prepared data verified successfully."
-
-
-      # ------------------------------------------------------
-      # Step 7: Run model training and evaluation
+      # Step 5: Run model training
       # ------------------------------------------------------
 
       - name: Train and evaluate model
@@ -238,21 +180,7 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Step 8: Verify trained model
-      # ------------------------------------------------------
-
-      - name: Verify trained model
-        run: |
-          echo "Deployment directory:"
-          ls -lh deployment/
-
-          test -f deployment/best_model.pkl
-
-          echo "Best model created successfully."
-
-
-      # ------------------------------------------------------
-      # Step 9: Upload trained model
+      # Step 6: Upload trained model
       # ------------------------------------------------------
 
       - name: Upload trained model
@@ -262,9 +190,9 @@ jobs:
           path: deployment/best_model.pkl
 
 
-  # ==========================================================
-  # JOB 3: UPDATE REPOSITORY
-  # ==========================================================
+# ============================================================
+# JOB 3: COMMIT BEST MODEL TO MAIN BRANCH
+# ============================================================
 
   update-repository:
 
@@ -274,14 +202,13 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    # Give GitHub Actions permission to push to main
     permissions:
       contents: write
 
     steps:
 
       # ------------------------------------------------------
-      # Step 1: Checkout LATEST main branch
+      # Step 1: Checkout latest main branch
       # ------------------------------------------------------
 
       - name: Checkout latest main branch
@@ -292,25 +219,36 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Step 2: Display current Git status
+      # Step 2: Configure Git
       # ------------------------------------------------------
 
-      - name: Check Git status
+      - name: Configure Git
         run: |
-          echo "Current branch:"
-          git branch --show-current
-
-          echo ""
-          echo "Current commit:"
-          git log -1 --oneline
-
-          echo ""
-          echo "Git status:"
-          git status
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
 
       # ------------------------------------------------------
-      # Step 3: Download trained model
+      # Step 3: Fetch latest main
+      # ------------------------------------------------------
+
+      - name: Fetch latest main
+        run: |
+          git fetch origin main
+
+
+      # ------------------------------------------------------
+      # Step 4: Pull latest changes
+      # IMPORTANT: Do this BEFORE downloading the artifact
+      # ------------------------------------------------------
+
+      - name: Pull latest changes
+        run: |
+          git pull --rebase origin main
+
+
+      # ------------------------------------------------------
+      # Step 5: Download trained model
       # ------------------------------------------------------
 
       - name: Download trained model
@@ -321,7 +259,7 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Step 4: Verify trained model
+      # Step 6: Verify trained model
       # ------------------------------------------------------
 
       - name: Verify trained model
@@ -335,35 +273,7 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Step 5: Configure Git
-      # ------------------------------------------------------
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-
-      # ------------------------------------------------------
-      # Step 6: Fetch latest changes from main
-      # ------------------------------------------------------
-
-      - name: Fetch latest main
-        run: |
-          git fetch origin main
-
-
-      # ------------------------------------------------------
-      # Step 7: Pull latest changes before committing
-      # ------------------------------------------------------
-
-      - name: Pull latest changes
-        run: |
-          git pull --rebase origin main
-
-
-      # ------------------------------------------------------
-      # Step 8: Add updated model
+      # Step 7: Add updated model
       # ------------------------------------------------------
 
       - name: Add updated model
@@ -372,7 +282,7 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Step 9: Commit updated model
+      # Step 8: Commit updated model
       # ------------------------------------------------------
 
       - name: Commit updated model
@@ -388,7 +298,7 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Step 10: Push updated model to main
+      # Step 9: Push updated model to main
       # ------------------------------------------------------
 
       - name: Push updates to main
