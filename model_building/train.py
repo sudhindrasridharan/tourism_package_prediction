@@ -274,7 +274,8 @@ with mlflow.start_run():
 
     mlflow.sklearn.log_model(
         best_model,
-        "best_model"
+        "best_model",
+        skops_trusted_types=["numpy.dtype"]
     )
 
 
