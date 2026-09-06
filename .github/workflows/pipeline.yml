@@ -37,7 +37,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check repository path and files
+        run: |
+          echo "Current working directory:"
+          pwd
 
+          echo ""
+          echo "GitHub workspace:"
+          echo "$GITHUB_WORKSPACE"
+
+          echo ""
+          echo "Repository contents:"
+          ls -la
+
+          echo ""
+          echo "Data folder contents:"
+          ls -la data
+
+          echo ""
+          echo "All files:"
+          find . -maxdepth 3 -type f | sort
       # ------------------------------------------------------
       # Step 2: Set up Python
       # ------------------------------------------------------
@@ -75,7 +94,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: prepared-data
-          path: data/processed/
+          path: data/processed
 
 
 # ============================================================
