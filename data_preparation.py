@@ -28,7 +28,7 @@ os.makedirs(
     PROCESSED_PATH,
     exist_ok=True
 )
-
+print (BASE_PATH,DATA_PATH,PROCESSED_PATH)
 
 # ============================================================
 # 2. LOAD DATA
