@@ -8,9 +8,10 @@ from sklearn.model_selection import train_test_split
 # 1. DEFINE BASE PATH
 # ============================================================
 
-BASE_PATH = os.path.dirname(
-    os.path.abspath(__file__)
-)
+#BASE_PATH = os.path.dirname(
+#    os.path.abspath(__file__)
+#)
+BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DATA_PATH = os.path.join(
     BASE_PATH,
