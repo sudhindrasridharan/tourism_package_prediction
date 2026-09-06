@@ -24,10 +24,12 @@ BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 MODEL_PATH = os.path.join(
     BASE_PATH,
-    "deployment",
     "best_model.pkl"
 )
 
+st.write("BASE_PATH:", BASE_PATH)
+st.write("MODEL_PATH:", MODEL_PATH)
+st.write("MODEL EXISTS:", os.path.exists(MODEL_PATH))
 
 @st.cache_resource
 def load_model():
