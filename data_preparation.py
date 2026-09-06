@@ -29,7 +29,29 @@ os.makedirs(
     PROCESSED_PATH,
     exist_ok=True
 )
-print (BASE_PATH,DATA_PATH,PROCESSED_PATH)
+
+# ============================================================
+# 2. FIND DATASET
+# ============================================================
+
+csv_files = [
+    file
+    for file in os.listdir(DATA_FOLDER)
+    if file.lower().endswith(".csv")
+]
+
+if not csv_files:
+    raise FileNotFoundError(
+        f"No CSV file found in {DATA_FOLDER}"
+    )
+
+DATA_PATH = os.path.join(
+    DATA_FOLDER,
+    csv_files[0]
+)
+
+print("Dataset found at:")
+print(DATA_PATH)
 
 # ============================================================
 # 2. LOAD DATA
