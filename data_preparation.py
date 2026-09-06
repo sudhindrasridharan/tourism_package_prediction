@@ -36,22 +36,22 @@ os.makedirs(
 
 csv_files = [
     file
-    for file in os.listdir(DATA_FOLDER)
+    for file in os.listdir(DATA_PATH)
     if file.lower().endswith(".csv")
 ]
 
 if not csv_files:
     raise FileNotFoundError(
-        f"No CSV file found in {DATA_FOLDER}"
+        f"No CSV file found in {DATA_PATH}"
     )
 
-DATA_PATH = os.path.join(
-    DATA_FOLDER,
+VAL_DATA_PATH = os.path.join(
+    DATA_PATH,
     csv_files[0]
 )
 
 print("Dataset found at:")
-print(DATA_PATH)
+print(VAL_DATA_PATH)
 
 # ============================================================
 # 2. LOAD DATA
@@ -59,7 +59,7 @@ print(DATA_PATH)
 
 print("Loading dataset...")
 
-df = pd.read_csv(DATA_PATH)
+df = pd.read_csv(VAL_DATA_PATH)
 
 print("Original dataset shape:", df.shape)
 
